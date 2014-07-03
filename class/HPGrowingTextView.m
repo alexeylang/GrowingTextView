@@ -338,6 +338,17 @@
 
 - (void)setupInitialHeightWithoutAnimation
 {
+    if ( CGRectIsEmpty(self.internalTextView.frame) )
+    {
+        // prepare internalTextView frame if needed
+        CGRect r = self.frame;
+        r.origin.y = self.contentInset.top - self.contentInset.bottom;
+        r.origin.x = self.contentInset.left;
+        r.size.width -= self.contentInset.left + self.contentInset.right;
+
+        internalTextView.frame = r;
+    }
+
     // Calculate height
     CGFloat initialHeight;
     if ([self respondsToSelector:@selector(snapshotViewAfterScreenUpdates:)]) {
@@ -358,7 +369,7 @@
     {
         if (!internalTextView.scrollEnabled) {
             internalTextView.scrollEnabled = YES;
-            [internalTextView flashScrollIndicators];
+            //[internalTextView flashScrollIndicators];
         }
     } else {
         internalTextView.scrollEnabled = NO;
@@ -368,8 +379,10 @@
     if ([delegate respondsToSelector:@selector(growingTextView:willChangeHeight:animated:)]) {
         [delegate growingTextView:self willChangeHeight:initialHeight animated:NO];
     }
-    [internalTextView.layoutManager ensureLayoutForTextContainer:internalTextView.textContainer];
-    [internalTextView layoutIfNeeded];
+    if ([self respondsToSelector:@selector(snapshotViewAfterScreenUpdates:)]) {
+        [internalTextView.layoutManager ensureLayoutForTextContainer:internalTextView.textContainer];
+        [internalTextView layoutIfNeeded];
+    }
     CGRect internalTextViewFrame = self.frame;
     internalTextViewFrame.size.height = initialHeight;
     self.frame = internalTextViewFrame;
@@ -381,13 +394,12 @@
         [delegate growingTextView:self didChangeHeight:initialHeight];
     }
 
-    // Scroll to bottom (needed on iOS 7)
+    // Scroll to bottom
     if ([self respondsToSelector:@selector(snapshotViewAfterScreenUpdates:)]) {
         [internalTextView.layoutManager ensureLayoutForTextContainer:internalTextView.textContainer];
         [internalTextView layoutIfNeeded];
-
-        [internalTextView setContentOffset:CGPointMake(0.0, internalTextView.contentSize.height) animated:NO];
     }
+    [internalTextView setContentOffset:CGPointMake(0.0, internalTextView.contentSize.height) animated:NO];
 }
 
 // Code from apple developer forum - @Steve Krulewitz, @Mark Marszal, @Eric Silverberg
