@@ -478,11 +478,18 @@
 
 -(void)setText:(NSString *)newText
 {
+    [self setText:newText refreshHeight:YES];
+}
+
+- (void)setText:(NSString *)newText refreshHeight:(BOOL)refreshHeight
+{
     internalTextView.text = newText;
-    
-    // include this line to analyze the height of the textview.
-    // fix from Ankit Thakur
-    [self performSelector:@selector(textViewDidChange:) withObject:internalTextView];
+    if ( refreshHeight )
+    {
+        // include this line to analyze the height of the textview.
+        // fix from Ankit Thakur
+        [self performSelector:@selector(textViewDidChange:) withObject:internalTextView];
+    }
 }
 
 -(NSString*) text
