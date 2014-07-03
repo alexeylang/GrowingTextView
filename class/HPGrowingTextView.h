@@ -48,7 +48,7 @@
 - (BOOL)growingTextView:(HPGrowingTextView *)growingTextView shouldChangeTextInRange:(NSRange)range replacementText:(NSString *)text;
 - (void)growingTextViewDidChange:(HPGrowingTextView *)growingTextView;
 
-- (void)growingTextView:(HPGrowingTextView *)growingTextView willChangeHeight:(float)height;
+- (void)growingTextView:(HPGrowingTextView *)growingTextView willChangeHeight:(float)height animated:(BOOL)animated;
 - (void)growingTextView:(HPGrowingTextView *)growingTextView didChangeHeight:(float)height;
 
 - (void)growingTextViewDidChangeSelection:(HPGrowingTextView *)growingTextView;

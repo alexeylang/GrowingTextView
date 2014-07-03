@@ -291,31 +291,18 @@
                 [delegate growingTextView:self willChangeHeight:newSizeH animated:animateHeightChange];
             }
             if(animateHeightChange) {
-                
-                if ([UIView resolveClassMethod:@selector(animateWithDuration:animations:)]) {
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 40000
-                    [UIView animateWithDuration:animationDuration 
-                                          delay:0 
-                                        options:(UIViewAnimationOptionAllowUserInteraction|
-                                                 UIViewAnimationOptionBeginFromCurrentState)                                 
-                                     animations:^(void) {
-                                         [self resizeTextView:newSizeH];
-                                     } 
-                                     completion:^(BOOL finished) {
-                                         if ([delegate respondsToSelector:@selector(growingTextView:didChangeHeight:)]) {
-                                             [delegate growingTextView:self didChangeHeight:newSizeH];
-                                         }
-                                     }];
-#endif
-                } else {
-                    [UIView beginAnimations:@"" context:nil];
-                    [UIView setAnimationDuration:animationDuration];
-                    [UIView setAnimationDelegate:self];
-                    [UIView setAnimationDidStopSelector:@selector(growDidStop)];
-                    [UIView setAnimationBeginsFromCurrentState:YES];
-                    [self resizeTextView:newSizeH];
-                    [UIView commitAnimations];
-                }
+                [UIView animateWithDuration:animationDuration
+                                      delay:0
+                                    options:(UIViewAnimationOptionAllowUserInteraction|
+                                             UIViewAnimationOptionBeginFromCurrentState)
+                                 animations:^(void) {
+                                     [self resizeTextView:newSizeH];
+                                 }
+                                 completion:^(BOOL finished) {
+                                     if ([delegate respondsToSelector:@selector(growingTextView:didChangeHeight:)]) {
+                                         [delegate growingTextView:self didChangeHeight:newSizeH];
+                                     }
+                                 }];
             } else {
                 [self resizeTextView:newSizeH];                
                 // [fixed] The growingTextView:didChangeHeight: delegate method was not called at all when not animating height changes.
@@ -378,8 +365,8 @@
     }
 
     // Resize
-    if ([delegate respondsToSelector:@selector(growingTextView:willChangeHeight:)]) {
-        [delegate growingTextView:self willChangeHeight:initialHeight];
+    if ([delegate respondsToSelector:@selector(growingTextView:willChangeHeight:animated:)]) {
+        [delegate growingTextView:self willChangeHeight:initialHeight animated:NO];
     }
     [internalTextView.layoutManager ensureLayoutForTextContainer:internalTextView.textContainer];
     [internalTextView layoutIfNeeded];
