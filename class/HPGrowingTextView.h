@@ -123,4 +123,8 @@
 // call to force a height change (e.g. after you change max/min lines)
 - (void)refreshHeight;
 
+// If you set long non-empty text to textView before viewDidAppear, height and scroll position may be incorrect.
+// Call this method to initially setup correct height.
+- (void)setupInitialHeightWithoutAnimation;
+
 @end

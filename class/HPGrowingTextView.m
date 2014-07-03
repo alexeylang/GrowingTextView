@@ -287,6 +287,9 @@
         // thanks to Gwynne <http://blog.darkrainfall.org/>
 		if (newSizeH <= maxHeight)
 		{
+            if ([delegate respondsToSelector:@selector(growingTextView:willChangeHeight:animated:)]) {
+                [delegate growingTextView:self willChangeHeight:newSizeH animated:animateHeightChange];
+            }
             if(animateHeightChange) {
                 
                 if ([UIView resolveClassMethod:@selector(animateWithDuration:animations:)]) {
@@ -346,6 +349,60 @@
 	}
 }
 
+- (void)setupInitialHeightWithoutAnimation
+{
+    // Calculate height
+    CGFloat initialHeight;
+    if ([self respondsToSelector:@selector(snapshotViewAfterScreenUpdates:)]) {
+        // use self size for initial setup (internalTextView frame may not be set yet)
+        initialHeight = ceilf([self.internalTextView sizeThatFits:self.bounds.size].height);
+    } else {
+        initialHeight = internalTextView.contentSize.height;
+    }
+
+    if (initialHeight < minHeight || !internalTextView.hasText) {
+        initialHeight = minHeight; //not smalles than minHeight
+    } else if (maxHeight && initialHeight > maxHeight) {
+        initialHeight = maxHeight; // not taller than maxHeight
+    }
+
+    // Scroll indicators
+    if (initialHeight >= maxHeight)
+    {
+        if (!internalTextView.scrollEnabled) {
+            internalTextView.scrollEnabled = YES;
+            [internalTextView flashScrollIndicators];
+        }
+    } else {
+        internalTextView.scrollEnabled = NO;
+    }
+
+    // Resize
+    if ([delegate respondsToSelector:@selector(growingTextView:willChangeHeight:)]) {
+        [delegate growingTextView:self willChangeHeight:initialHeight];
+    }
+    [internalTextView.layoutManager ensureLayoutForTextContainer:internalTextView.textContainer];
+    [internalTextView layoutIfNeeded];
+    CGRect internalTextViewFrame = self.frame;
+    internalTextViewFrame.size.height = initialHeight;
+    self.frame = internalTextViewFrame;
+    internalTextViewFrame.origin.y = contentInset.top - contentInset.bottom;
+    internalTextViewFrame.origin.x = contentInset.left;
+    if(!CGRectEqualToRect(internalTextView.frame, internalTextViewFrame)) internalTextView.frame = internalTextViewFrame;
+
+    if ([delegate respondsToSelector:@selector(growingTextView:didChangeHeight:)]) {
+        [delegate growingTextView:self didChangeHeight:initialHeight];
+    }
+
+    // Scroll to bottom (needed on iOS 7)
+    if ([self respondsToSelector:@selector(snapshotViewAfterScreenUpdates:)]) {
+        [internalTextView.layoutManager ensureLayoutForTextContainer:internalTextView.textContainer];
+        [internalTextView layoutIfNeeded];
+
+        [internalTextView setContentOffset:CGPointMake(0.0, internalTextView.contentSize.height) animated:NO];
+    }
+}
+
 // Code from apple developer forum - @Steve Krulewitz, @Mark Marszal, @Eric Silverberg
 - (CGFloat)measureHeight
 {
@@ -368,10 +425,6 @@
 
 -(void)resizeTextView:(NSInteger)newSizeH
 {
-    if ([delegate respondsToSelector:@selector(growingTextView:willChangeHeight:)]) {
-        [delegate growingTextView:self willChangeHeight:newSizeH];
-    }
-    
     CGRect internalTextViewFrame = self.frame;
     internalTextViewFrame.size.height = newSizeH; // + padding
     self.frame = internalTextViewFrame;
