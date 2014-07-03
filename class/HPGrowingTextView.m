@@ -28,8 +28,12 @@
 #import "HPGrowingTextView.h"
 #import "HPTextViewInternal.h"
 
-@interface HPGrowingTextView(private)
+@interface HPGrowingTextView()
+
+@property (nonatomic) BOOL needsInitialHeightRefresh;
+
 -(void)commonInitialiser;
+-(void)setupInitialHeightWithoutAnimation;
 -(void)resizeTextView:(NSInteger)newSizeH;
 -(void)growDidStop;
 @end
@@ -258,6 +262,12 @@
 
 - (void)refreshHeight
 {
+    if ( self.needsInitialHeightRefresh )
+    {
+        [self setupInitialHeightWithoutAnimation];
+        self.needsInitialHeightRefresh = NO;
+        return;
+    }
 	//size of content, so we can set the frame of self
 	NSInteger newSizeH = [self measureHeight];
 	if (newSizeH < minHeight || !internalTextView.hasText) {
@@ -287,32 +297,22 @@
         // thanks to Gwynne <http://blog.darkrainfall.org/>
 		if (newSizeH <= maxHeight)
 		{
+            if ([delegate respondsToSelector:@selector(growingTextView:willChangeHeight:animated:)]) {
+                [delegate growingTextView:self willChangeHeight:newSizeH animated:animateHeightChange];
+            }
             if(animateHeightChange) {
-                
-                if ([UIView resolveClassMethod:@selector(animateWithDuration:animations:)]) {
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 40000
-                    [UIView animateWithDuration:animationDuration 
-                                          delay:0 
-                                        options:(UIViewAnimationOptionAllowUserInteraction|
-                                                 UIViewAnimationOptionBeginFromCurrentState)                                 
-                                     animations:^(void) {
-                                         [self resizeTextView:newSizeH];
-                                     } 
-                                     completion:^(BOOL finished) {
-                                         if ([delegate respondsToSelector:@selector(growingTextView:didChangeHeight:)]) {
-                                             [delegate growingTextView:self didChangeHeight:newSizeH];
-                                         }
-                                     }];
-#endif
-                } else {
-                    [UIView beginAnimations:@"" context:nil];
-                    [UIView setAnimationDuration:animationDuration];
-                    [UIView setAnimationDelegate:self];
-                    [UIView setAnimationDidStopSelector:@selector(growDidStop)];
-                    [UIView setAnimationBeginsFromCurrentState:YES];
-                    [self resizeTextView:newSizeH];
-                    [UIView commitAnimations];
-                }
+                [UIView animateWithDuration:animationDuration
+                                      delay:0
+                                    options:(UIViewAnimationOptionAllowUserInteraction|
+                                             UIViewAnimationOptionBeginFromCurrentState)
+                                 animations:^(void) {
+                                     [self resizeTextView:newSizeH];
+                                 }
+                                 completion:^(BOOL finished) {
+                                     if ([delegate respondsToSelector:@selector(growingTextView:didChangeHeight:)]) {
+                                         [delegate growingTextView:self didChangeHeight:newSizeH];
+                                     }
+                                 }];
             } else {
                 [self resizeTextView:newSizeH];                
                 // [fixed] The growingTextView:didChangeHeight: delegate method was not called at all when not animating height changes.
@@ -346,6 +346,77 @@
 	}
 }
 
+- (void)setNeedsInitialHeightRefresh
+{
+    self.needsInitialHeightRefresh = YES;
+}
+
+- (void)setupInitialHeightWithoutAnimation
+{
+    if ( CGRectIsEmpty(self.internalTextView.frame) )
+    {
+        // prepare internalTextView frame if needed
+        CGRect r = self.frame;
+        r.origin.y = self.contentInset.top - self.contentInset.bottom;
+        r.origin.x = self.contentInset.left;
+        r.size.width -= self.contentInset.left + self.contentInset.right;
+
+        internalTextView.frame = r;
+    }
+
+    // Calculate height
+    CGFloat initialHeight;
+    if ([self respondsToSelector:@selector(snapshotViewAfterScreenUpdates:)]) {
+        // use self size for initial setup (internalTextView frame may not be set yet)
+        initialHeight = ceilf([self.internalTextView sizeThatFits:self.bounds.size].height);
+    } else {
+        initialHeight = internalTextView.contentSize.height;
+    }
+
+    if (initialHeight < minHeight || !internalTextView.hasText) {
+        initialHeight = minHeight; //not smalles than minHeight
+    } else if (maxHeight && initialHeight > maxHeight) {
+        initialHeight = maxHeight; // not taller than maxHeight
+    }
+
+    // Scroll indicators
+    if (initialHeight >= maxHeight)
+    {
+        if (!internalTextView.scrollEnabled) {
+            internalTextView.scrollEnabled = YES;
+            //[internalTextView flashScrollIndicators];
+        }
+    } else {
+        internalTextView.scrollEnabled = NO;
+    }
+
+    // Resize
+    if ([delegate respondsToSelector:@selector(growingTextView:willChangeHeight:animated:)]) {
+        [delegate growingTextView:self willChangeHeight:initialHeight animated:NO];
+    }
+    if ([self respondsToSelector:@selector(snapshotViewAfterScreenUpdates:)]) {
+        [internalTextView.layoutManager ensureLayoutForTextContainer:internalTextView.textContainer];
+        [internalTextView layoutIfNeeded];
+    }
+    CGRect internalTextViewFrame = self.frame;
+    internalTextViewFrame.size.height = initialHeight;
+    self.frame = internalTextViewFrame;
+    internalTextViewFrame.origin.y = contentInset.top - contentInset.bottom;
+    internalTextViewFrame.origin.x = contentInset.left;
+    if(!CGRectEqualToRect(internalTextView.frame, internalTextViewFrame)) internalTextView.frame = internalTextViewFrame;
+
+    if ([delegate respondsToSelector:@selector(growingTextView:didChangeHeight:)]) {
+        [delegate growingTextView:self didChangeHeight:initialHeight];
+    }
+
+    // Scroll to bottom
+    if ([self respondsToSelector:@selector(snapshotViewAfterScreenUpdates:)]) {
+        [internalTextView.layoutManager ensureLayoutForTextContainer:internalTextView.textContainer];
+        [internalTextView layoutIfNeeded];
+    }
+    [internalTextView setContentOffset:CGPointMake(0.0, internalTextView.contentSize.height) animated:NO];
+}
+
 // Code from apple developer forum - @Steve Krulewitz, @Mark Marszal, @Eric Silverberg
 - (CGFloat)measureHeight
 {
@@ -368,10 +439,6 @@
 
 -(void)resizeTextView:(NSInteger)newSizeH
 {
-    if ([delegate respondsToSelector:@selector(growingTextView:willChangeHeight:)]) {
-        [delegate growingTextView:self willChangeHeight:newSizeH];
-    }
-    
     CGRect internalTextViewFrame = self.frame;
     internalTextViewFrame.size.height = newSizeH; // + padding
     self.frame = internalTextViewFrame;
@@ -425,11 +492,18 @@
 
 -(void)setText:(NSString *)newText
 {
+    [self setText:newText refreshHeight:YES];
+}
+
+- (void)setText:(NSString *)newText refreshHeight:(BOOL)refreshHeight
+{
     internalTextView.text = newText;
-    
-    // include this line to analyze the height of the textview.
-    // fix from Ankit Thakur
-    [self performSelector:@selector(textViewDidChange:) withObject:internalTextView];
+    if ( refreshHeight )
+    {
+        // include this line to analyze the height of the textview.
+        // fix from Ankit Thakur
+        [self performSelector:@selector(textViewDidChange:) withObject:internalTextView];
+    }
 }
 
 -(NSString*) text
