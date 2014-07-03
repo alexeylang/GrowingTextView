@@ -28,8 +28,12 @@
 #import "HPGrowingTextView.h"
 #import "HPTextViewInternal.h"
 
-@interface HPGrowingTextView(private)
+@interface HPGrowingTextView()
+
+@property (nonatomic) BOOL needsInitialHeightRefresh;
+
 -(void)commonInitialiser;
+-(void)setupInitialHeightWithoutAnimation;
 -(void)resizeTextView:(NSInteger)newSizeH;
 -(void)growDidStop;
 @end
@@ -258,6 +262,12 @@
 
 - (void)refreshHeight
 {
+    if ( self.needsInitialHeightRefresh )
+    {
+        [self setupInitialHeightWithoutAnimation];
+        self.needsInitialHeightRefresh = NO;
+        return;
+    }
 	//size of content, so we can set the frame of self
 	NSInteger newSizeH = [self measureHeight];
 	if (newSizeH < minHeight || !internalTextView.hasText) {
@@ -334,6 +344,11 @@
     if ([delegate respondsToSelector:@selector(growingTextViewDidChange:)]) {
 		[delegate growingTextViewDidChange:self];
 	}
+}
+
+- (void)setNeedsInitialHeightRefresh
+{
+    self.needsInitialHeightRefresh = YES;
 }
 
 - (void)setupInitialHeightWithoutAnimation

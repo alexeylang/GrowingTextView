@@ -121,13 +121,14 @@
 - (void)scrollRangeToVisible:(NSRange)range;
 
 // call to force a height change (e.g. after you change max/min lines)
+// if setNeedsInitialHeightRefresh was previously called, then refresh is processed without animation with separate logic.
 - (void)refreshHeight;
 
-// If you set text before viewDidAppear, use refreshHeight = NO option and setupInitialHeightWithoutAnimation later.
+// If you set text before viewDidAppear, use refreshHeight = NO option and call setNeedsInitialHeightRefresh in viewWillAppear.
 - (void)setText:(NSString *)newText refreshHeight:(BOOL)refreshHeight;
 
 // If you set long non-empty text to textView before viewDidAppear, height and scroll position may be incorrect.
 // Call this method to initially setup correct height.
-- (void)setupInitialHeightWithoutAnimation;
+- (void)setNeedsInitialHeightRefresh;
 
 @end
