@@ -266,6 +266,10 @@
     {
         [self setupInitialHeightWithoutAnimation];
         self.needsInitialHeightRefresh = NO;
+        // Tell the delegate that the text view changed
+        if ([delegate respondsToSelector:@selector(growingTextViewDidChange:)]) {
+            [delegate growingTextViewDidChange:self];
+        }
         return;
     }
 	//size of content, so we can set the frame of self
