@@ -94,7 +94,6 @@
     internalTextView = [[HPTextViewInternal alloc] initWithFrame:r];
 #endif
     internalTextView.delegate = self;
-    internalTextView.scrollEnabled = NO;
     internalTextView.font = [UIFont fontWithName:@"Helvetica" size:13]; 
     internalTextView.contentInset = UIEdgeInsetsZero;		
     internalTextView.showsHorizontalScrollIndicator = NO;
@@ -269,20 +268,6 @@
     
 	if (internalTextView.frame.size.height != newSizeH)
 	{
-        // if our new height is greater than the maxHeight
-        // sets not set the height or move things
-        // around and enable scrolling
-        if (newSizeH >= maxHeight)
-        {
-            if(!internalTextView.scrollEnabled){
-                internalTextView.scrollEnabled = YES;
-                [internalTextView flashScrollIndicators];
-            }
-            
-        } else {
-            internalTextView.scrollEnabled = NO;
-        }
-        
         // [fixed] Pasting too much text into the view failed to fire the height change,
         // thanks to Gwynne <http://blog.darkrainfall.org/>
 		if (newSizeH <= maxHeight)
@@ -498,18 +483,6 @@
 -(NSRange)selectedRange
 {
 	return internalTextView.selectedRange;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-- (void)setIsScrollable:(BOOL)isScrollable
-{
-    internalTextView.scrollEnabled = isScrollable;
-}
-
-- (BOOL)isScrollable
-{
-    return internalTextView.scrollEnabled;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
