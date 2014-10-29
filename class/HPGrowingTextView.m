@@ -382,7 +382,10 @@
     // Scroll indicators
     if (initialHeight >= maxHeight)
     {
-        internalTextView.scrollEnabled = YES;
+        if (!internalTextView.scrollEnabled) {
+            internalTextView.scrollEnabled = YES;
+            //[internalTextView flashScrollIndicators];
+        }
     } else {
         internalTextView.scrollEnabled = NO;
     }
