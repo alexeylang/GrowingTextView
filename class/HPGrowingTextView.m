@@ -364,10 +364,6 @@
         internalTextView.frame = r;
     }
 
-    // Recalculate min/max height
-    self.maxNumberOfLines = self.maxNumberOfLines;
-    self.minNumberOfLines = self.minNumberOfLines;
-
     // Calculate height
     CGFloat initialHeight;
     if ([self respondsToSelector:@selector(snapshotViewAfterScreenUpdates:)]) {
