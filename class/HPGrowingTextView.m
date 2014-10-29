@@ -94,7 +94,6 @@
     internalTextView = [[HPTextViewInternal alloc] initWithFrame:r];
 #endif
     internalTextView.delegate = self;
-    internalTextView.scrollEnabled = NO;
     internalTextView.font = [UIFont fontWithName:@"Helvetica" size:13]; 
     internalTextView.contentInset = UIEdgeInsetsZero;		
     internalTextView.showsHorizontalScrollIndicator = NO;
@@ -269,52 +268,26 @@
     
 	if (internalTextView.frame.size.height != newSizeH)
 	{
-        // if our new height is greater than the maxHeight
-        // sets not set the height or move things
-        // around and enable scrolling
-        if (newSizeH >= maxHeight)
-        {
-            if(!internalTextView.scrollEnabled){
-                internalTextView.scrollEnabled = YES;
-                [internalTextView flashScrollIndicators];
-            }
-            
-        } else {
-            internalTextView.scrollEnabled = NO;
-        }
-        
         // [fixed] Pasting too much text into the view failed to fire the height change,
         // thanks to Gwynne <http://blog.darkrainfall.org/>
 		if (newSizeH <= maxHeight)
 		{
             if(animateHeightChange) {
                 
-                if ([UIView resolveClassMethod:@selector(animateWithDuration:animations:)]) {
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 40000
-                    [UIView animateWithDuration:animationDuration 
-                                          delay:0 
-                                        options:(UIViewAnimationOptionAllowUserInteraction|
-                                                 UIViewAnimationOptionBeginFromCurrentState)                                 
-                                     animations:^(void) {
-                                         [self resizeTextView:newSizeH];
-                                     } 
-                                     completion:^(BOOL finished) {
-                                         if ([delegate respondsToSelector:@selector(growingTextView:didChangeHeight:)]) {
-                                             [delegate growingTextView:self didChangeHeight:newSizeH];
-                                         }
-                                     }];
-#endif
-                } else {
-                    [UIView beginAnimations:@"" context:nil];
-                    [UIView setAnimationDuration:animationDuration];
-                    [UIView setAnimationDelegate:self];
-                    [UIView setAnimationDidStopSelector:@selector(growDidStop)];
-                    [UIView setAnimationBeginsFromCurrentState:YES];
-                    [self resizeTextView:newSizeH];
-                    [UIView commitAnimations];
-                }
+                [UIView animateWithDuration:animationDuration
+                                      delay:0
+                                    options:(UIViewAnimationOptionAllowUserInteraction|
+                                             UIViewAnimationOptionBeginFromCurrentState)
+                                 animations:^(void) {
+                                     [self resizeTextView:newSizeH];
+                                 }
+                                 completion:^(BOOL finished) {
+                                     if ([delegate respondsToSelector:@selector(growingTextView:didChangeHeight:)]) {
+                                         [delegate growingTextView:self didChangeHeight:newSizeH];
+                                     }
+                                 }];
             } else {
-                [self resizeTextView:newSizeH];                
+                [self resizeTextView:newSizeH];
                 // [fixed] The growingTextView:didChangeHeight: delegate method was not called at all when not animating height changes.
                 // thanks to Gwynne <http://blog.darkrainfall.org/>
                 
@@ -498,18 +471,6 @@
 -(NSRange)selectedRange
 {
 	return internalTextView.selectedRange;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-- (void)setIsScrollable:(BOOL)isScrollable
-{
-    internalTextView.scrollEnabled = isScrollable;
-}
-
-- (BOOL)isScrollable
-{
-    return internalTextView.scrollEnabled;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
