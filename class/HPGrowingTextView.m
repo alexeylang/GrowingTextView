@@ -28,6 +28,18 @@
 #import "HPGrowingTextView.h"
 #import "HPTextViewInternal.h"
 
+
+static NSUInteger majorSystemVersion()
+{
+    static NSUInteger majorVersion;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        majorVersion = [[[UIDevice currentDevice] systemVersion] integerValue];
+    });
+    return majorVersion;
+}
+
+
 @interface HPGrowingTextView(private)
 -(void)commonInitialiser;
 -(void)resizeTextView:(NSInteger)newSizeH;
@@ -98,6 +110,10 @@
     internalTextView.showsHorizontalScrollIndicator = NO;
     internalTextView.text = @"-";
     internalTextView.contentMode = UIViewContentModeRedraw;
+    if ( [internalTextView respondsToSelector:@selector(layoutManager)] )
+    {
+        internalTextView.layoutManager.allowsNonContiguousLayout = NO;
+    }
     [self addSubview:internalTextView];
     
     minHeight = internalTextView.frame.size.height;
@@ -304,14 +320,16 @@
     if (wasDisplayingPlaceholder != internalTextView.displayPlaceHolder) {
         [internalTextView setNeedsDisplay];
     }
-    
-    
-    // scroll to caret (needed on iOS7)
-    if ([self respondsToSelector:@selector(snapshotViewAfterScreenUpdates:)])
+
+    if ( 7 == majorSystemVersion() )
     {
-        [self performSelector:@selector(resetScrollPositionForIOS7) withObject:nil afterDelay:0.1f];
+        // scroll to caret (needed on iOS7)
+        if ([self respondsToSelector:@selector(snapshotViewAfterScreenUpdates:)])
+        {
+            [self performSelector:@selector(resetScrollPositionForIOS7) withObject:nil afterDelay:0.1f];
+        }
     }
-    
+
     // Tell the delegate that the text view changed
     if ([delegate respondsToSelector:@selector(growingTextViewDidChange:)]) {
 		[delegate growingTextViewDidChange:self];
