@@ -31,7 +31,6 @@
 @interface HPGrowingTextView(private)
 -(void)commonInitialiser;
 -(void)resizeTextView:(NSInteger)newSizeH;
--(void)growDidStop;
 @end
 
 @implementation HPGrowingTextView
@@ -353,19 +352,6 @@
     internalTextViewFrame.origin.x = contentInset.left;
     
     if(!CGRectEqualToRect(internalTextView.frame, internalTextViewFrame)) internalTextView.frame = internalTextViewFrame;
-}
-
-- (void)growDidStop
-{
-    // scroll to caret (needed on iOS7)
-    if ([self respondsToSelector:@selector(snapshotViewAfterScreenUpdates:)])
-    {
-        [self resetScrollPositionForIOS7];
-    }
-    
-	if ([delegate respondsToSelector:@selector(growingTextView:didChangeHeight:)]) {
-		[delegate growingTextView:self didChangeHeight:self.frame.size.height];
-	}
 }
 
 -(void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
