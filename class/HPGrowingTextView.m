@@ -78,6 +78,10 @@ static NSUInteger majorSystemVersion()
     return self;
 }
 
+- (void)dealloc {
+    internalTextView.delegate = nil;
+}
+
 #if __IPHONE_OS_VERSION_MIN_REQUIRED >= 70000
 - (id)initWithFrame:(CGRect)frame textContainer:(NSTextContainer *)textContainer {
     if ((self = [super initWithFrame:frame])) {
